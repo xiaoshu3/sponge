@@ -18,7 +18,7 @@ class ByteStream {
     // that's a sign that you probably want to keep exploring
     // different approaches.
     std::deque<char> datastream{};
-    int nread=0,nwrite=0;
+    size_t nread=0,nwrite=0;
     int _capacity;
     bool endinput{};
     bool _error{};  //!< Flag indicating that the stream suffered an error.

@@ -25,20 +25,21 @@ size_t ByteStream::write(const string &data) {
 
 //! \param[in] len bytes will be copied from the output side of the buffer
 string ByteStream::peek_output(const size_t len) const {
-    size_t now_nums = datastream.size();
+    //size_t now_nums = buffer_size();
     string res;
-    if(len > now_nums) return res;
+    //if(len > now_nums) return res;
     auto tmp = datastream.begin();
     for(size_t i=0;i<len;i++,tmp++){
-        res+= (*tmp);
+        // res+= (*tmp);
+        res.push_back(*tmp);
     }
     return res;
 }
 
 //! \param[in] len bytes will be removed from the output side of the buffer
 void ByteStream::pop_output(const size_t len) { 
-    size_t now_nums = datastream.size();
-    if(len > now_nums) return ;
+    // size_t now_nums = buffer_size();
+    // if(len > now_nums) return ;
     for(size_t i=0;i<len;i++) datastream.pop_front();
     nread +=len;
 }
@@ -57,7 +58,7 @@ void ByteStream::end_input() { endinput = true;}
 
 bool ByteStream::input_ended() const { return endinput; }
 
-size_t ByteStream::buffer_size() const { return datastream.size(); }
+size_t ByteStream::buffer_size() const { return nwrite - nread; }
 
 bool ByteStream::buffer_empty() const { return datastream.empty(); }
 
@@ -67,4 +68,4 @@ size_t ByteStream::bytes_written() const { return nwrite; }
 
 size_t ByteStream::bytes_read() const { return nread; }
 
-size_t ByteStream::remaining_capacity() const { return _capacity - datastream.size(); }
+size_t ByteStream::remaining_capacity() const { return _capacity - buffer_size(); }
