@@ -16,23 +16,16 @@ void get_URL(const string &host, const string &path) {
     // Then you'll need to print out everything the server sends back,
     // (not just one call to read() -- everything) until you reach
     // the "eof" (end of file).
-    string s1 = "\r\n";
-    string s2 = "GET " + path + " HTTP/1.1\r\n";
-    string s3 = "Host: " + host + "\r\n";
-    string s4 = "Connection close\r\n";
-
+    string input("\r\nGET " + path + " HTTP/1.1\r\nHost: " + host + "\r\n\r\n");
     TCPSocket sock;
     sock.connect(Address(host,"http"));
 
-    
+    sock.write(input);
 
-   
-    //sock.write(s1+s2 + s3);
-
-    sock.write(s1);
-    sock.write(s2);
-    sock.write(s3);
-    sock.write(s1);
+    // sock.write(s1);
+    // sock.write(s2);
+    // sock.write(s3);
+    // sock.write(s1);
     sock.shutdown(SHUT_WR);
 
     //sock.shutdown(SHUT_WR);
