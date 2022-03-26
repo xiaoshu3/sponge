@@ -5,9 +5,22 @@
 
 #include <cstdint>
 #include <string>
+#include <set>
 
 //! \brief A class that assembles a series of excerpts from a byte stream (possibly out of order,
 //! possibly overlapping) into an in-order byte stream.
+
+struct Node{
+  size_t start,end;
+  std::string substring;
+
+  bool operator < (const Node& b)const{
+    if(start != b.start)
+      return start < b.start;
+    else return end < b.end;
+  }
+};
+
 class StreamReassembler {
   private:
     // Your code here -- add private members as necessary.
@@ -15,11 +28,19 @@ class StreamReassembler {
     ByteStream _output;  //!< The reassembled in-order byte stream
     size_t _capacity;    //!< The maximum number of bytes
 
+    size_t get_eof = -1;
+    size_t pushed_pos = 0;
+    //size_t stored = 0;
+    std::set<Node> TmpStore{};
+    
+
   public:
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.
     //! \note This capacity limits both the bytes that have been reassembled,
     //! and those that have not yet been reassembled.
     StreamReassembler(const size_t capacity);
+
+    void insert_TmpStore(size_t start,size_t end,std::string& substring);
 
     //! \brief Receive a substring and write any newly contiguous bytes into the stream.
     //!
@@ -46,6 +67,12 @@ class StreamReassembler {
     //! \brief Is the internal state empty (other than the output stream)?
     //! \returns `true` if no substrings are waiting to be assembled
     bool empty() const;
+
+    size_t remain_capacity() const{
+      return _capacity - unassembled_bytes() ;
+    }
+
+    
 };
 
 #endif  // SPONGE_LIBSPONGE_STREAM_REASSEMBLER_HH
