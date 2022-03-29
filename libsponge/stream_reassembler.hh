@@ -11,15 +11,16 @@
 //! possibly overlapping) into an in-order byte stream.
 
 struct Node{
-  size_t start,end;
-  std::string substring;
+  
+  size_t _start,_end;
+  std::string _substring;
 
-  bool operator < (const Node& b)const{
-    if(start != b.start)
-      return start < b.start;
-    else return end < b.end;
+  bool operator < (const Node& t)const{
+    if(_start == t._start) return _end < t._end;
+    return _start < t._start;
   }
 };
+
 
 class StreamReassembler {
   private:
@@ -27,20 +28,16 @@ class StreamReassembler {
 
     ByteStream _output;  //!< The reassembled in-order byte stream
     size_t _capacity;    //!< The maximum number of bytes
+    std::set<Node> _setStore{};
+    size_t _pushedpos = 0;
+    size_t _geteof = -1;
 
-    size_t get_eof = -1;
-    size_t pushed_pos = 0;
-    //size_t stored = 0;
-    std::set<Node> TmpStore{};
-    
 
   public:
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.
     //! \note This capacity limits both the bytes that have been reassembled,
     //! and those that have not yet been reassembled.
     StreamReassembler(const size_t capacity);
-
-    void insert_TmpStore(size_t start,size_t end,std::string& substring);
 
     //! \brief Receive a substring and write any newly contiguous bytes into the stream.
     //!
@@ -51,6 +48,9 @@ class StreamReassembler {
     //! \param index indicates the index (place in sequence) of the first byte in `data`
     //! \param eof the last byte of `data` will be the last byte in the entire stream
     void push_substring(const std::string &data, const uint64_t index, const bool eof);
+
+    void insert_set(size_t start, std::string& s);
+    size_t remain_capacity();
 
     //! \name Access the reassembled byte stream
     //!@{
@@ -67,12 +67,6 @@ class StreamReassembler {
     //! \brief Is the internal state empty (other than the output stream)?
     //! \returns `true` if no substrings are waiting to be assembled
     bool empty() const;
-
-    size_t remain_capacity() const{
-      return _capacity - unassembled_bytes() ;
-    }
-
-    
 };
 
 #endif  // SPONGE_LIBSPONGE_STREAM_REASSEMBLER_HH

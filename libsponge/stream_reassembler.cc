@@ -1,5 +1,4 @@
 #include "stream_reassembler.hh"
-#include <iostream>
 
 // Dummy implementation of a stream reassembler.
 
@@ -13,120 +12,71 @@ void DUMMY_CODE(Targs &&... /* unused */) {}
 
 using namespace std;
 
-StreamReassembler::StreamReassembler(const size_t capacity) : _output(capacity), _capacity(capacity){}
+StreamReassembler::StreamReassembler(const size_t capacity) : _output(capacity), _capacity(capacity) {}
 
 //! \details This function accepts a substring (aka a segment) of bytes,
 //! possibly out-of-order, from the logical stream, and assembles any newly
 //! contiguous substrings and writes them into the output stream in order.
 void StreamReassembler::push_substring(const string &data, const size_t index, const bool eof) {
-    size_t start = index,end;
-    string substring = move(data);
-    if(index < pushed_pos){
-        if(data.size() + index <= pushed_pos) return;
-        substring = substring.substr(pushed_pos - index);
-        start  = pushed_pos;
-    }
-    if(eof) get_eof = index + data.size();
-    size_t len = substring.size();
+    //if(_geteof >= 0 ) return;
+    if(eof) _geteof = index + data.size();
+    if(_geteof == _pushedpos) _output.end_input();
+    string substring(data);
     
-    if(len > remain_capacity()){
-        if(start == pushed_pos){
-            pushed_pos += min(substring.size(),_output.remaining_capacity());
-            _output.write(substring);
-        }
-        else substring = substring.substr(0,remain_capacity());
-    }
-    //if(substring == "") return;
-    end = start + substring.size();
-
-    //cerr<<start<<" "<<end <<" " <<substring<<endl;
-
-    insert_TmpStore(start,end,substring);
-    auto it = TmpStore.begin();
-    while(it != TmpStore.end() && it->start <= pushed_pos){
-        if(it->end <= pushed_pos){
-            TmpStore.erase(it++);
-            continue;
-        }
-        
-        size_t maxsent = _output.remaining_capacity();
-        if(maxsent >= it->end - pushed_pos){
-            _output.write(it->substring.substr(pushed_pos - it->start));
-            pushed_pos = it->end;
-        }
+    if(index <= _pushedpos){
+        if(index + data.size() <= _pushedpos) return;
         else{
-            _output.write(it->substring.substr(pushed_pos - it->start,pushed_pos - it->start+ maxsent));
-            pushed_pos+= maxsent;
-            TmpStore.insert({pushed_pos,it->end-pushed_pos,it->substring.substr(pushed_pos - it->start)});
+            substring = move(data.substr(_pushedpos - index));
+            size_t writelen = _output.write(substring);
+            _pushedpos += writelen;
+            if(writelen <  substring.size()){
+                substring = move(substring.substr(writelen));
+                insert_set(_pushedpos, substring);
+            }
         }
-        
-        
-        TmpStore.erase(it++);
+    }else{
+        insert_set(index,substring);
     }
-    if(get_eof  == pushed_pos ) _output.end_input();
+
+    auto it =  _setStore.begin();
+    while(it != _setStore.end() && it->_start <= _pushedpos){
+        if(it->_end <= _pushedpos) _setStore.erase(it++);
+        else{
+            _pushedpos += _output.write(it->_substring.substr(_pushedpos - it->_start));
+            if(_pushedpos < it->_end) break;
+            else _setStore.erase(it++);
+        }
+    }
+
+    if(_geteof == _pushedpos) _output.end_input();
 }
 
-size_t StreamReassembler::unassembled_bytes() const { 
-    auto it  = TmpStore.begin();
-    size_t last = 0,res = 0;
-    if(it == TmpStore.end()) return 0;
-    else{
-        res += it->end - it->start;
-        last = it->end;
-        ++it;
-    }
-    while(it != TmpStore.end()){
-        if(it->start < last){
-            if(it->end <= last){
-                it++;
-                continue;
-            }
-            else res += (it->end - last);
-        }
-        else res +=(it->end - it->start);
-        
-        last = it->end;
+size_t StreamReassembler::unassembled_bytes() const {
+    size_t res = 0,last;
+    auto it  = _setStore.begin();
+    if(it!= _setStore.end()) last = it->_start;
+    while(it != _setStore.end()){
+        if(last < it->_end){
+            res+= (it->_end - last);
+            last = it->_end;
+        } 
         it++;
     }
     return res;
+}
+
+bool StreamReassembler::empty() const { return _setStore.empty(); }
+
+void StreamReassembler::insert_set(size_t start,string& s){
+    if(!s.size()) return;
+    size_t len = remain_capacity();
+    if(len >= s.size()) _setStore.insert({start,start+s.size(),move(s)});
+    else{
+        _setStore.insert({start,start+len,move(s.substr(0,len))});
+    }
 
 }
 
-bool StreamReassembler::empty() const { return unassembled_bytes() == 0; }
-
-void StreamReassembler::insert_TmpStore(size_t start,size_t end,string& substring){
-    if(end <= start) return;
-    TmpStore.insert({start,end,move(substring)});
-    // auto it  = TmpStore.begin();
-    // while(it != TmpStore.end()){
-    //     if(start > it->end || end < it->start) ++it;
-    //     else break;
-    // }
-    // if(it == TmpStore.end()){
-    //     TmpStore.insert({start,end,move(substring)});
-    //     return;
-    // }
-    // if(start <= it->start && end<= it->end) return;
-    // else if(it->start < start && it->end < end){
-    //     TmpStore.erase(it);
-    //     TmpStore.insert({start,end,move(substring)});
-    //     return;
-    // }
-    // else{
-    //     if(start < it->start){
-    //         substring.append(it->substring.substr(end-it->start));
-    //         end = it->end;
-    //         TmpStore.erase(it);
-    //         TmpStore.insert({start,end,move(substring)});
-    //         return;
-    //     }
-    //     else{
-    //         string s(move(it->substring));
-    //         s.append(substring.substr(it->end - start));
-    //         start  = it->start;
-    //         TmpStore.erase(it);
-    //         TmpStore.insert({start,end,move(substring)});
-    //     }
-    // }
+size_t StreamReassembler::remain_capacity(){
+    return _capacity - unassembled_bytes();
 }
-
