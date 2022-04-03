@@ -18,9 +18,65 @@ StreamReassembler::StreamReassembler(const size_t capacity) : _output(capacity),
 //! possibly out-of-order, from the logical stream, and assembles any newly
 //! contiguous substrings and writes them into the output stream in order.
 void StreamReassembler::push_substring(const string &data, const size_t index, const bool eof) {
-    DUMMY_CODE(data, index, eof);
+    //if(_geteof >= 0 ) return;
+    if(eof) _geteof = index + data.size();
+    if(_geteof == _pushedpos) _output.end_input();
+    string substring(data);
+    
+    if(index <= _pushedpos){
+        if(index + data.size() <= _pushedpos) return;
+        else{
+            substring = move(data.substr(_pushedpos - index));
+            size_t writelen = _output.write(substring);
+            _pushedpos += writelen;
+            if(writelen <  substring.size()){
+                substring = move(substring.substr(writelen));
+                insert_set(_pushedpos, substring);
+            }
+        }
+    }else{
+        insert_set(index,substring);
+    }
+
+    auto it =  _setStore.begin();
+    while(it != _setStore.end() && it->_start <= _pushedpos){
+        if(it->_end <= _pushedpos) _setStore.erase(it++);
+        else{
+            _pushedpos += _output.write(it->_substring.substr(_pushedpos - it->_start));
+            if(_pushedpos < it->_end) break;
+            else _setStore.erase(it++);
+        }
+    }
+
+    if(_geteof == _pushedpos) _output.end_input();
 }
 
-size_t StreamReassembler::unassembled_bytes() const { return {}; }
+size_t StreamReassembler::unassembled_bytes() const {
+    size_t res = 0,last;
+    auto it  = _setStore.begin();
+    if(it!= _setStore.end()) last = it->_start;
+    while(it != _setStore.end()){
+        if(last < it->_end){
+            res+= (it->_end - last);
+            last = it->_end;
+        } 
+        it++;
+    }
+    return res;
+}
 
-bool StreamReassembler::empty() const { return {}; }
+bool StreamReassembler::empty() const { return _setStore.empty(); }
+
+void StreamReassembler::insert_set(size_t start,string& s){
+    if(!s.size()) return;
+    size_t len = remain_capacity();
+    if(len >= s.size()) _setStore.insert({start,start+s.size(),move(s)});
+    else{
+        _setStore.insert({start,start+len,move(s.substr(0,len))});
+    }
+
+}
+
+size_t StreamReassembler::remain_capacity(){
+    return _capacity - unassembled_bytes();
+}
