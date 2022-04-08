@@ -57,7 +57,7 @@ size_t StreamReassembler::unassembled_bytes() const {
     if(it!= _setStore.end()) last = it->_start;
     while(it != _setStore.end()){
         if(last < it->_end){
-            res+= (it->_end - last);
+            res+= (it->_end - max(last,it->_start));
             last = it->_end;
         } 
         it++;
@@ -77,6 +77,9 @@ void StreamReassembler::insert_set(size_t start,string& s){
 
 }
 
-size_t StreamReassembler::remain_capacity(){
-    return _capacity - unassembled_bytes();
+size_t StreamReassembler::remain_capacity()const{
+    size_t reman = _output.remaining_capacity(),unassembled = unassembled_bytes();
+    // return _output.remaining_capacity() - unassembled_bytes();
+    if (reman <= unassembled) return 0;
+    return reman - unassembled;
 }

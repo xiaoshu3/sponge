@@ -50,7 +50,7 @@ class StreamReassembler {
     void push_substring(const std::string &data, const uint64_t index, const bool eof);
 
     void insert_set(size_t start, std::string& s);
-    size_t remain_capacity();
+    size_t remain_capacity()const;
 
     //! \name Access the reassembled byte stream
     //!@{
@@ -67,6 +67,15 @@ class StreamReassembler {
     //! \brief Is the internal state empty (other than the output stream)?
     //! \returns `true` if no substrings are waiting to be assembled
     bool empty() const;
+
+    uint64_t _checkpoint()const{return static_cast<uint64_t> (_pushedpos);}
+    size_t window_size() const {
+      return stream_out().remaining_capacity();
+    }
+
+    bool input_ended()const{
+      return stream_out().input_ended();
+    }
 };
 
 #endif  // SPONGE_LIBSPONGE_STREAM_REASSEMBLER_HH
