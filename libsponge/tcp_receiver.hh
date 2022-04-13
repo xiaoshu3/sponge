@@ -20,6 +20,11 @@ class TCPReceiver {
     //! The maximum number of bytes we'll store.
     size_t _capacity;
 
+    // uint32_t _isn{};
+    WrappingInt32 _isn{0};
+
+    bool _getsyn{};
+
   public:
     //! \brief Construct a TCP receiver
     //!
@@ -47,7 +52,7 @@ class TCPReceiver {
     //! the first byte that falls after the window (and will not be
     //! accepted by the receiver) and (b) the sequence number of the
     //! beginning of the window (the ackno).
-    size_t window_size() const;
+    size_t window_size()const;
     //!@}
 
     //! \brief number of bytes stored but not yet reassembled
