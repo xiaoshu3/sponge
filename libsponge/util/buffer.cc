@@ -49,6 +49,7 @@ size_t BufferList::size() const {
 }
 
 void BufferList::remove_prefix(size_t n) {
+    if(n ==0 && !_buffers.empty() && _buffers.front().str().size() == 0) _buffers.pop_front();
     while (n > 0) {
         if (_buffers.empty()) {
             throw std::out_of_range("BufferList::remove_prefix");
