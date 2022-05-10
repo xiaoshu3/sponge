@@ -29,7 +29,7 @@ uint64_t TCPSender::bytes_in_flight() const {
 }
 
 void TCPSender::fill_window() {
-    if(!_sent_window){_next_window_size = _remain_window_size = 1;}
+    // if(!_sent_window){_next_window_size = _remain_window_size = 1;}
     if(_sentFIN) return;
     if(_next_window_size && _remain_window_size == 0) return;
     if(_acknoed_num + _next_window_size < _next_seqno ) return;
@@ -45,21 +45,6 @@ void TCPSender::fill_window() {
     len -= (_next_seqno == 0);
     string s = move(_stream.read(len));
 
-    // TCPSegment tmp{};
-    // tmp.header().syn = (_next_seqno == 0);
-    // tmp.header().fin = _stream.eof();
-    // // tmp.header().seqno = _isn + static_cast<uint32_t>(_next_seqno);
-    // tmp.header().seqno = wrap(_next_seqno,_isn);
-    // tmp.payload() = Buffer(move(s));
-    
-    // size_t length = tmp.length_in_sequence_space();
-    // if(length == 0) return;
-
-    // _next_seqno += length;
-    // // _bufferStore.append(BufferList(tmp.payload()));
-    // _bufferStore.append(tmp.payload());
-    // segments_out().push(tmp);
-    // t.start();
     if(_next_seqno > 0 && !_stream.eof() && !s.size()) return;
     len = s.size();
     if(len == 0 ) len = 1;
@@ -100,7 +85,7 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
     uint64_t checkpoint = unwrap(ackno,_isn,_acknoed_num);
     if(checkpoint > _next_seqno || checkpoint < _acknoed_num) return;
 
-    _sent_window = true;
+    // _sent_window = true;
     size_t n = checkpoint - _acknoed_num;
     _next_window_size = window_size;
     _remain_window_size = window_size;

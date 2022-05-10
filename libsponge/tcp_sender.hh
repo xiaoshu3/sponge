@@ -62,11 +62,11 @@ class TCPSender {
 
     BufferList _bufferStore{};
     Timer t;
-    uint16_t _next_window_size{0};
-    uint16_t _remain_window_size{};
+    uint16_t _next_window_size{1};
+    uint16_t _remain_window_size{1};
     uint64_t _acknoed_num{0};
     bool _sentFIN{};
-    bool _sent_window{};
+    // bool _sent_window{};
 
   public:
     //! Initialize a TCPSender
