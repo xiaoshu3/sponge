@@ -15,6 +15,34 @@
 //! segments, keeps track of which segments are still in-flight,
 //! maintains the Retransmission Timer, and retransmits in-flight
 //! segments if the retransmission timer expires.
+
+class Timer{
+  private: 
+    unsigned int _init_RTO;
+    unsigned int _now_RTO;
+    size_t _passed_time{0};
+    bool _running{};
+    bool _not_back_off{};
+  public:
+    unsigned int _retransmissions_times{0};
+    Timer(unsigned int init_timeout) : _init_RTO(init_timeout),_now_RTO(init_timeout){}
+    void expire(){
+      _passed_time = 0;
+      ++_retransmissions_times;
+      if(!_not_back_off){
+        _now_RTO <<= 1;
+      }
+    }
+    void resert(){_passed_time = 0;_now_RTO = _init_RTO;stop();_retransmissions_times = 0;
+                  _not_back_off = false;}
+    void start(){_running = true;}
+    void stop(){_running = false;}
+    void add(size_t ms_since_last_tick){_passed_time += ms_since_last_tick;}
+    bool _isRunning(){return _running;}
+    bool isExpire(){return _passed_time >= _now_RTO;}
+    void set_not_back_off(){_not_back_off = true;}
+
+};
 class TCPSender {
   private:
     //! our initial sequence number, the number for our SYN.
@@ -32,6 +60,14 @@ class TCPSender {
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
 
+    BufferList _bufferStore{};
+    Timer t;
+    uint16_t _next_window_size{1};
+    uint16_t _remain_window_size{1};
+    uint64_t _acknoed_num{0};
+    bool _sentFIN{};
+    // bool _sent_window{};
+
   public:
     //! Initialize a TCPSender
     TCPSender(const size_t capacity = TCPConfig::DEFAULT_CAPACITY,
@@ -44,6 +80,7 @@ class TCPSender {
     const ByteStream &stream_in() const { return _stream; }
     //!@}
 
+    void retransmit();
     //! \name Methods that can cause the TCPSender to send a segment
     //!@{
 
