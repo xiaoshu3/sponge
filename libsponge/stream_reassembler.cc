@@ -1,4 +1,5 @@
 #include "stream_reassembler.hh"
+#include "iostream"
 
 // Dummy implementation of a stream reassembler.
 
@@ -24,7 +25,9 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
     string substring(data);
     
     if(index <= _pushedpos){
-        if(index + data.size() <= _pushedpos) return;
+        if(index + data.size() < _pushedpos){
+            return;
+        }
         else{
             substring = move(data.substr(_pushedpos - index));
             size_t writelen = _output.write(substring);
@@ -43,7 +46,10 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
         if(it->_end <= _pushedpos) _setStore.erase(it++);
         else{
             _pushedpos += _output.write(it->_substring.substr(_pushedpos - it->_start));
-            if(_pushedpos < it->_end) break;
+            if(_pushedpos < it->_end){
+                cerr<<"error in last"<<endl;
+                break;
+            }
             else _setStore.erase(it++);
         }
     }
@@ -69,11 +75,14 @@ bool StreamReassembler::empty() const { return _setStore.empty(); }
 
 void StreamReassembler::insert_set(size_t start,string& s){
     if(!s.size()) return;
-    size_t len = remain_capacity();
-    if(len >= s.size()) _setStore.insert({start,start+s.size(),move(s)});
-    else{
-        _setStore.insert({start,start+len,move(s.substr(0,len))});
-    }
+    // size_t len = remain_capacity();
+    // if(len >= s.size()) _setStore.insert({start,start+s.size(),move(s)});
+    // else{
+    //     cerr<<"error in insert_set"<<endl;
+    //     _setStore.insert({start,start+len,move(s.substr(0,len))});
+    // }
+
+    _setStore.insert({start,start+s.size(),move(s)});
 
 }
 

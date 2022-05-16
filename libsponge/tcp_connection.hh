@@ -21,6 +21,9 @@ class TCPConnection {
     //! in case the remote TCPConnection doesn't know we've received its whole stream?
     bool _linger_after_streams_finish{true};
 
+    size_t _last_segment_received{};
+    bool _active{true};
+
   public:
     //! \name "Input" interface for the writer
     //!@{
@@ -59,6 +62,7 @@ class TCPConnection {
     TCPState state() const { return {_sender, _receiver, active(), _linger_after_streams_finish}; };
     //!@}
 
+    TCPReceiver& receive(){return _receiver;}
     //! \name Methods for the owner or operating system to call
     //!@{
 
@@ -94,6 +98,10 @@ class TCPConnection {
     TCPConnection(const TCPConnection &other) = delete;
     TCPConnection &operator=(const TCPConnection &other) = delete;
     //!@}
+
+    void unclean_shutdown();
+
+    void push_segment_out();
 };
 
 #endif  // SPONGE_LIBSPONGE_TCP_FACTORED_HH

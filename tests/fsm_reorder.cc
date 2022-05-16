@@ -15,6 +15,7 @@
 #include <string>
 #include <tuple>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 using State = TCPTestHarness::State;
@@ -103,6 +104,7 @@ int main() {
 
             WrappingInt32 min_expect_ackno = rx_isn + 1;
             WrappingInt32 max_expect_ackno = rx_isn + 1;
+            // sort(seq_size.begin(),seq_size.end());
             for (auto [off, sz] : seq_size) {
                 test_2.send_data(rx_isn + 1 + off, tx_isn + 1, d.cbegin() + off, d.cbegin() + off + sz);
                 if (off <= min_expect_ackno.raw_value() && off + sz > min_expect_ackno.raw_value()) {
@@ -120,7 +122,16 @@ int main() {
             }
 
             test_2.execute(Tick(1));
-            test_2.execute(ExpectData{}.with_data(d), "test 1 failed: got back the wrong data");
+            // cerr<<"test2_rep_no "<<rep_no<<endl;
+            // cerr<<"written: "<<test_2._fsm.inbound_stream().bytes_written()<<endl;
+            // // cerr<<"re
+            // if(test_2._fsm.unassembled_bytes()){
+            //     cerr<<"unassem: "<<test_2._fsm.unassembled_bytes()<<endl;
+            //     test_2._fsm.receive().show();
+            // }
+            // cerr<<"_pushpos: "<<test_2._fsm.receive()._checkpoint()<<endl;
+            test_2.execute(ExpectData{}.with_data(d), "test 2 failed: got back the wrong data");
+
         }
     } catch (const exception &e) {
         cerr << e.what() << endl;

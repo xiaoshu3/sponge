@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <string>
 #include <set>
+#include <iostream>
 
 //! \brief A class that assembles a series of excerpts from a byte stream (possibly out of order,
 //! possibly overlapping) into an in-order byte stream.
@@ -29,11 +30,12 @@ class StreamReassembler {
     ByteStream _output;  //!< The reassembled in-order byte stream
     size_t _capacity;    //!< The maximum number of bytes
     std::set<Node> _setStore{};
-    size_t _pushedpos = 0;
+    
     size_t _geteof = -1;
 
 
   public:
+    size_t _pushedpos = 0;
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.
     //! \note This capacity limits both the bytes that have been reassembled,
     //! and those that have not yet been reassembled.
@@ -75,6 +77,14 @@ class StreamReassembler {
 
     bool input_ended()const{
       return stream_out().input_ended();
+    }
+
+    void show(){
+      auto it = _setStore.begin();
+      while(it != _setStore.end()){
+        std::cout<<it->_start<<" "<<it->_end<<std::endl;
+        it++;
+      }
     }
 };
 

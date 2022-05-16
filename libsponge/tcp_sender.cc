@@ -29,7 +29,6 @@ uint64_t TCPSender::bytes_in_flight() const {
 }
 
 void TCPSender::fill_window() {
-    // if(!_sent_window){_next_window_size = _remain_window_size = 1;}
     if(_sentFIN) return;
     if(_next_window_size && _remain_window_size == 0) return;
     if(_acknoed_num + _next_window_size < _next_seqno ) return;
@@ -102,7 +101,7 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
          _acknoed_num = checkpoint;
         _bufferStore.remove_prefix(n);
     }
-    // fill_window();
+    fill_window();
 }
 
 //! \param[in] ms_since_last_tick the number of milliseconds since the last call to this method
@@ -112,6 +111,7 @@ void TCPSender::tick(const size_t ms_since_last_tick) {
     if(t.isExpire()){
         if(bytes_in_flight()){
             t.expire();
+            if(t._retransmissions_times > TCPConfig::MAX_RETX_ATTEMPTS) return;
             retransmit();
         }
         else t.resert();
@@ -127,6 +127,14 @@ void TCPSender::send_empty_segment() {
     tmp.header().seqno = _isn + static_cast<uint32_t>(_next_seqno);
     segments_out().push(tmp);
 }
+
+void  TCPSender::send_rst_segment(){
+    TCPSegment tmp{};
+    tmp.header().seqno = _isn + static_cast<uint32_t>(_next_seqno);
+    tmp.header().rst = true;
+    segments_out().push(tmp);
+}
+
 
 void TCPSender::retransmit(){
     TCPSegment tmp;

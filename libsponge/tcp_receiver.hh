@@ -7,6 +7,7 @@
 #include "wrapping_integers.hh"
 
 #include <optional>
+#include <iostream>
 
 //! \brief The "receiver" part of a TCP implementation.
 
@@ -66,6 +67,12 @@ class TCPReceiver {
     ByteStream &stream_out() { return _reassembler.stream_out(); }
     const ByteStream &stream_out() const { return _reassembler.stream_out(); }
     //!@}
+     uint64_t _checkpoint()const{return _reassembler._checkpoint();}
+     void show(){
+       std::cout<<"test show"<<std::endl;
+       _reassembler.show();
+     }
+    bool _out_of_window(const TCPSegment &seg);
 };
 
 #endif  // SPONGE_LIBSPONGE_TCP_RECEIVER_HH
