@@ -65,7 +65,10 @@ class TCPSender {
     uint16_t _next_window_size{1};
     uint16_t _remain_window_size{1};
     uint64_t _acknoed_num{0};
+    uint64_t re_seqno{};
+
     bool _sentFIN{};
+    bool _last_with_fin{};
     // bool _sent_window{};
 
   public:

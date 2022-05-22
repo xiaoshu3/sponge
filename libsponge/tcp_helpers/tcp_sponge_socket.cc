@@ -243,6 +243,7 @@ void TCPSpongeSocket<AdaptT>::listen_and_accept(const TCPConfig &c_tcp, const Fd
     cerr << "DEBUG: Listening for incoming connection... ";
     _tcp_loop([&] {
         const auto s = _tcp->state();
+        // cerr <<s.name()<<endl;
         return (s == TCPState::State::LISTEN or s == TCPState::State::SYN_RCVD or s == TCPState::State::SYN_SENT);
     });
     cerr << "new connection from " << _datagram_adapter.config().destination.to_string() << ".\n";

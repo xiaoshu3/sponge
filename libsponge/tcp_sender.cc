@@ -24,6 +24,7 @@ TCPSender::TCPSender(const size_t capacity, const uint16_t retx_timeout, const s
     , t(retx_timeout){}
 
 uint64_t TCPSender::bytes_in_flight() const {
+    if(_acknoed_num == _next_seqno) return 0;
     return _bufferStore.size() + (_next_seqno >0 && _acknoed_num == 0) \
     + (_sentFIN && _acknoed_num < _next_seqno);
 }
@@ -71,7 +72,10 @@ void TCPSender::fill_window() {
         size_t length = tmp.length_in_sequence_space();
         if(length == 0) break;
         _next_seqno += length;
-        _bufferStore.append(tmp.payload());
+        if(tmp.payload().size()){
+            _bufferStore.append(tmp.payload());
+            if(tmp.header().fin) _last_with_fin = true;
+        }
         segments_out().push(tmp);
         i+=send_size;
     }
@@ -95,10 +99,16 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
 
         t.resert();
         if(bytes_in_flight()) t.start();
+        re_seqno = _acknoed_num;
+        _acknoed_num = checkpoint;
+
         if(_sentFIN && _bufferStore.buffers().size() == 1 && n == _bufferStore.buffers().front().size()){
-            if(checkpoint < _next_seqno) return;
+            if(checkpoint < _next_seqno &&_last_with_fin){
+                fill_window();
+                return;
+            }
         }
-         _acknoed_num = checkpoint;
+        re_seqno = checkpoint;
         _bufferStore.remove_prefix(n);
     }
     fill_window();
@@ -137,11 +147,14 @@ void  TCPSender::send_rst_segment(){
 
 
 void TCPSender::retransmit(){
+    if(_acknoed_num == _next_seqno) return;
     TCPSegment tmp;
     tmp.header().syn = (_acknoed_num == 0);
-    tmp.header().fin = _sentFIN && _bufferStore.buffers().size() == 1;
-    tmp.header().seqno = wrap(_acknoed_num,_isn);
-    tmp.payload() = _bufferStore.buffers().front();
+    tmp.header().seqno = wrap(re_seqno,_isn);
+    if(!_bufferStore.buffers().empty()) tmp.payload() = _bufferStore.buffers().front();
+
+    tmp.header().fin = _sentFIN && (_bufferStore.buffers().size() == 1 || _bufferStore.buffers().empty());
+
     segments_out().push(tmp);
     t.start();
 }
